@@ -1,0 +1,17 @@
+{
+  "name": "backendadminpro",
+  "version": "1.0.0",
+  "description": "Servidor backend del curso Angular Avanzado",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "cachorrus",
+  "license": "MIT",
+  "dependencies": {
+    "colors": "^1.2.1",
+    "express": "^4.16.3",
+    "mongoose": "^5.0.11"
+  }
+}
