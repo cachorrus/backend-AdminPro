@@ -1,5 +1,5 @@
 var jwt = require('jsonwebtoken');
-var _SEED = require('../config/config');
+var _CONFIG = require('../config/config');
 
 //====================================================
 //		VALIDAR TOKEN
@@ -8,7 +8,7 @@ var _SEED = require('../config/config');
 exports.verificaToken = function (req, res, next) {
     var token = req.headers.authorization;
   
-    jwt.verify(token, _SEED.SEED, (err, decode) => {
+    jwt.verify(token, _CONFIG.SEED, (err, decode) => {
   
       if(err){
         return res.status(401).send({

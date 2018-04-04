@@ -9,7 +9,14 @@ var app = express();
     LISTADO DE USUARIOS
  =======================================*/
 app.get("/", mdAutenticacion.verificaToken, (req, res, next) => {
-  Usuario.find({}, "nombre email img role").exec((err, usuarios) => {
+
+  var desde = req.query.desde || 0;
+  desde = Number(desde);
+
+  Usuario.find({}, "nombre email img role")
+    .skip(desde)
+    .limit(5)
+    .exec((err, usuarios) => {
     if (err) {
       return res.status(500).send({
         ok: false,
@@ -18,10 +25,24 @@ app.get("/", mdAutenticacion.verificaToken, (req, res, next) => {
       });
     }
 
-    res.status(200).send({
-      ok: true,
-      usuarios: usuarios
+    Usuario.count({}, (err, conteo) => {
+      
+      if (err) {
+        return res.status(500).send({
+          ok: false,
+          mensaje: "Error total usuarios",
+          errors: err
+        });
+      }
+
+      res.status(200).send({
+        ok: true,
+        usuarios: usuarios,
+        total: conteo
+      });
     });
+
+    
   });
 });
 
@@ -76,7 +97,7 @@ app.put("/:id", mdAutenticacion.verificaToken, (req, res) => {
 
       usuario.password = ';)';
 
-      res.status(201).send({
+      res.status(200).send({
         ok: true,
         usuario: usuarioGuardado,
         usuarioToken: req.payload
