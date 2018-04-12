@@ -12,93 +12,107 @@ var app = express();
 //====================================================
 //		AUTENTICACION GOOGLE
 //====================================================
-app.post('/google', (req, res, next) => {
+async function verify(token) {
+	const ticket = await client.verifyIdToken({
+		idToken: token,
+		audience: _CONFIG.GOOGLE_CLIENT_ID,  // Specify the CLIENT_ID of the app that accesses the backend
+		// Or, if multiple clients access the backend:
+		//[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]
+	});
+	const payload = ticket.getPayload();
+	//const userid = payload['sub'];
+	// If request specified a G Suite domain:
+	//const domain = payload['hd'];
+
+	return {
+		nombre: payload.name,
+		email: payload.email,
+		img: payload.picture,
+		google: true
+	}
+  }
+
+
+app.post('/google', async (req, res, next) => {
 	
 	var token = req.body.token || '';
+	var googleUser;
+
+	try {
+        googleUser = await verify(token);
+    } catch (error) {
+        return res.status(403).send({
+            ok: false,
+            mensaje: 'Token no válida',
+            error: error.message
+        });
+	}
 	
+	//console.log(googleUser);
 
-	client.verifyIdToken({
-        idToken: token,
-        audience: _CONFIG.GOOGLE_CLIENT_ID
-    }, (err, login) => {
-		
-		if(err){
-			return res.status(403).send({
+	//Buscar usuario google en BD
+	Usuario.findOne({
+		email: googleUser.email
+	}, (err, usuarioDB) => {
+		if (err) {
+			return res.status(500).send({
 				ok: false,
-				mensaje: 'Token no válida',
-				error: err.message
+				mensaje: 'Error al buscar usuario - login',
+				error:err
 			});
-		}
-
-		var googleUser = login.payload;
-		//console.log(googleUser);
-
-		//Buscar usuario google en BD
-		Usuario.findOne({
-			email: googleUser.email
-		}, (err, usuarioDB) => {
-			if (err) {
-				return res.status(500).send({
+		};
+		if (usuarioDB) {
+			if (usuarioDB.google === false) {
+				return res.status(400).send({
 					ok: false,
-					mensaje: 'Error al buscar usuario - login',
-					error:err
+					err: {
+						message: 'Debe de usar su autenticación normal'
+					}
 				});
-			};
-			if (usuarioDB) {
-				if (usuarioDB.google === false) {
-					return res.status(400).send({
-						ok: false,
-						err: {
-							message: 'Debe de usar su autenticación normal'
-						}
-					});
-				} else {
-					let token = jwt.sign({
-							usuario: usuarioDB
-						}, _CONFIG.SEED, {
-							expiresIn: _CONFIG.CADUCIDAD_TOKEN
-						});
-					return res.status(200).send({
-						ok: true,
-						usuario: usuarioDB,
-						token: token,
-						id: usuarioDB._id
-					});
-				}
 			} else {
-				// Si el usuario no existe en nuestra base de datos
-				let usuario = new Usuario();
-				usuario.nombre = googleUser.name;
-				usuario.email = googleUser.email;
-				usuario.img = googleUser.picture;
-				usuario.google = true;
-				usuario.password = ':)';
-
-				usuario.save((err, usuarioDB) => {
-					if (err) {
-						return res.status(500).send({
-							ok: false,
-							mensaje: 'Error al crear usario - google',
-							error: err
-						});
-					};
-					let token = jwt.sign({
-							usuario: usuarioDB
-						}, _CONFIG.SEED, {
-							expiresIn: _CONFIG.CADUCIDAD_TOKEN
-						});
-					return res.status(200).send({
-						ok: true,
-						usuario: usuarioDB,
-						token: token,
-						id: usuarioDB._id
+				let token = jwt.sign({
+						usuario: usuarioDB
+					}, _CONFIG.SEED, {
+						expiresIn: _CONFIG.CADUCIDAD_TOKEN
 					});
+				return res.status(200).send({
+					ok: true,
+					usuario: usuarioDB,
+					token: token,
+					id: usuarioDB._id
 				});
 			}
-		});
-	
-	});
- 
+		} else {
+			// Si el usuario no existe en nuestra base de datos
+			let usuario = new Usuario();
+			usuario.nombre = googleUser.nombre;
+			usuario.email = googleUser.email;
+			usuario.img = googleUser.img;
+			usuario.google = googleUser.google;
+			usuario.password = ':)';
+
+			usuario.save((err, usuarioDB) => {
+				if (err) {
+					return res.status(500).send({
+						ok: false,
+						mensaje: 'Error al crear usario - google',
+						error: err
+					});
+				};
+				let token = jwt.sign({
+						usuario: usuarioDB
+					}, _CONFIG.SEED, {
+						expiresIn: _CONFIG.CADUCIDAD_TOKEN
+					});
+				return res.status(200).send({
+					ok: true,
+					usuario: usuarioDB,
+					token: token,
+					id: usuarioDB._id
+				});
+			});
+		}
+	});	
 });
 
 
