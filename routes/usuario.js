@@ -82,9 +82,12 @@ app.put("/:id", mdAutenticacion.verificaToken, (req, res) => {
     */
 
     usuario.nombre = body.nombre;
-    usuario.email = body.email;
-    usuario.role = body.role;
 
+    if (!usuario.google) {
+      usuario.email = body.email;
+    }
+    
+    usuario.role = body.role;
 
     usuario.save((err, usuarioGuardado) => {
       if (err) {
