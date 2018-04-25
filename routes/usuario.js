@@ -8,7 +8,7 @@ var app = express();
 /*======================================
     LISTADO DE USUARIOS
  =======================================*/
-app.get("/", mdAutenticacion.verificaToken, (req, res, next) => {
+app.get("/", [mdAutenticacion.verificaToken, mdAutenticacion.verficaAdminRole], (req, res, next) => {
 
   var desde = req.query.desde || 0;
   desde = Number(desde);
@@ -49,7 +49,7 @@ app.get("/", mdAutenticacion.verificaToken, (req, res, next) => {
 /*======================================
     ACTUALIZAR USUARIO
  =======================================*/
-app.put("/:id", mdAutenticacion.verificaToken, (req, res) => {
+app.put("/:id", [mdAutenticacion.verificaToken, mdAutenticacion.verificaAdminRole_o_mismoUsuario], (req, res) => {
   var id = req.params.id;
   var body = req.body;
 
@@ -145,7 +145,7 @@ app.post("/", (req, res, next) => {
 //  BORRAR USUARIO
 //====================================================
 
-app.delete('/:id', mdAutenticacion.verificaToken, (req, res) => {
+app.delete('/:id', [mdAutenticacion.verificaToken, mdAutenticacion.verficaAdminRole], (req, res) => {
   var id = req.params.id;
   
   Usuario.findByIdAndRemove(id, (err, usuarioBorrado) =>{
