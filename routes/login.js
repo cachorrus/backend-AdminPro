@@ -3,11 +3,29 @@ var Usuario = require("../models/usuario");
 var bcrypt = require("bcryptjs");
 var jwt = require('jsonwebtoken');
 var _CONFIG = require('../config/config');
+var mdAutenticacion = require('../middlewares/autenticacion');
 
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(_CONFIG.GOOGLE_CLIENT_ID, _CONFIG.GOOGLE_SECRET);
 
 var app = express();
+
+
+app.get('/renuevatoken', mdAutenticacion.verificaToken, (req, res) => {
+
+	let token = jwt.sign({
+		payload: req.payload
+	}, _CONFIG.SEED, {
+		expiresIn: _CONFIG.CADUCIDAD_TOKEN
+	});
+	
+	return res.status(200).send({
+		ok: true,
+		token: token,
+	});
+	
+});
+
 
 //====================================================
 //		AUTENTICACION GOOGLE
